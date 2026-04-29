@@ -86,7 +86,7 @@ Do **not** pass single bare words without punctuation if you want multi-concept 
 | Asset | Default path |
 |---|---|
 | SAM2 checkpoint | `./checkpoints/sam2.1_hiera_large.pt` |
-| SAM2 config | `source/sam2/configs/sam2.1/sam2.1_hiera_l.yaml` |
+| SAM2 config | `configs/sam2.1/sam2.1_hiera_l.yaml` (Hydra pkg path, relative to `sam2` package) |
 | GroundingDINO config | `source/grounding_dino/groundingdino/config/GroundingDINO_SwinT_OGC.py` |
 | GroundingDINO checkpoint | `gdino_checkpoints/groundingdino_swint_ogc.pth` |
 

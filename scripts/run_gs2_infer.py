@@ -44,7 +44,7 @@ def main():
     ap.add_argument("--box-threshold", type=float, default=0.35)
     ap.add_argument("--text-threshold", type=float, default=0.25)
     ap.add_argument("--sam2-checkpoint", default="./checkpoints/sam2.1_hiera_large.pt")
-    ap.add_argument("--sam2-model-config", default="source/sam2/configs/sam2.1/sam2.1_hiera_l.yaml")
+    ap.add_argument("--sam2-model-config", default="configs/sam2.1/sam2.1_hiera_l.yaml")
     ap.add_argument("--gdino-config", default="source/grounding_dino/groundingdino/config/GroundingDINO_SwinT_OGC.py")
     ap.add_argument("--gdino-checkpoint", default="gdino_checkpoints/groundingdino_swint_ogc.pth")
     args = ap.parse_args()
