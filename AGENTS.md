@@ -160,16 +160,28 @@ git submodule add https://github.com/facebookresearch/sam3.git sam3_ws/sam3
 git submodule add https://github.com/IDEA-Research/Grounded-SAM-2.git gs2_ws/source
 git commit -m "chore: register upstream repos as git submodules"
 
-# 4. Rebuild GS2 CUDA extensions
+# 4. Rebuild GS2 CUDA extensions — TWO separate steps required
+export CUDA_HOME=/usr/local/cuda-12.8
+export PATH="$CUDA_HOME/bin:$PATH"
 cd gs2_ws
+
+# 4a. SAM2 CUDA extension (sam2/_C.so)
 uv pip install --no-build-isolation -e source/
+
+# 4b. GroundingDINO CUDA extension (groundingdino/_C.cpython-*.so)
+#     Must be built separately — source/setup.py does NOT cover grounding_dino/
+uv pip install --no-build-isolation -e source/grounding_dino/
+
 # (also reinstall torch+cuda if .venv was reset)
 uv pip install torch==2.11.0+cu128 torchvision==0.26.0+cu128 \
   --extra-index-url https://download.pytorch.org/whl/cu128
 
+# Pin transformers to 4.x — transformers 5.x removed BertModel.get_head_mask
+uv pip install "transformers<5.0"
+
 # 5. Verify
 cd ..
-./scripts/run_all.sh data/images/truck.jpg "car. tire."
+./scripts/run_all.sh gs2_ws/source/notebooks/images/truck.jpg "car. tire."
 ```
 
 ### Updating GS2 source from upstream
@@ -182,7 +194,9 @@ git init
 git remote add origin https://github.com/IDEA-Research/Grounded-SAM-2.git
 git fetch origin main
 git merge origin/main   # or reset --hard if you want a clean sync
-# Rebuild extensions if any C++ files changed
+# Rebuild extensions if any C++ files changed (two steps — see above)
 cd ..
+export CUDA_HOME=/usr/local/cuda-12.8 && export PATH="$CUDA_HOME/bin:$PATH"
 uv pip install --no-build-isolation -e source/
+uv pip install --no-build-isolation -e source/grounding_dino/
 ```
