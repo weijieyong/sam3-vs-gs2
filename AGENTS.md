@@ -21,7 +21,7 @@ sam3_vs_gs2/
 │   └── sam3/                 # upstream SAM3 source (facebookresearch/sam3)
 │       └── sam3/             # the importable Python package
 └── gs2_ws/                   # Grounded SAM 2 uv workspace
-    ├── pyproject.toml        # wrapper project ("SAM-2", package=false)
+    ├── pyproject.toml        # wrapper project ("gs2-box", package=false)
     ├── uv.lock
     ├── .python-version
     ├── .venv/
@@ -51,14 +51,28 @@ sam3_vs_gs2/
 - `RUN_NAME` defaults to `YYYY-MM-DD_HHMMSS_<stem>` when omitted.
 - Logs for each step land in `runs/<run_name>/logs/sam3.log` and `logs/grounded_sam2.log`. On failure the last 80 lines are printed to stderr.
 
+## First-time setup
+
+```bash
+git clone <repo> sam3_vs_gs2
+cd sam3_vs_gs2
+./scripts/setup.sh          # uv sync for both workspaces; builds CUDA extensions (~1-2 min)
+```
+
+Override `CUDA_HOME` if not at `/usr/local/cuda-12.8`:
+
+```bash
+CUDA_HOME=/usr/local/cuda-12.1 ./scripts/setup.sh
+```
+
 ## Environment separation
 
 | Model | Working directory | Env var override | uv invocation |
 |---|---|---|---|
 | SAM3 | `<repo>/sam3_ws` | `SAM3_WS` | `uv run python` |
-| Grounded SAM 2 | `<repo>/gs2_ws` | `GS2_WS` | `uv run --no-sync python` |
+| Grounded SAM 2 | `<repo>/gs2_ws` | `GS2_WS` | `uv run python` |
 
-GS2 uses `--no-sync` because its torch+CUDA packages are installed manually (not managed by the uv lockfile) to avoid triggering a CUDA extension rebuild.
+Both workspaces are fully managed by uv. `uv sync` in either workspace installs all deps and builds any CUDA extensions (requires `nvcc` and `CUDA_HOME` set).
 
 GS2 additionally requires CUDA: `CUDA_HOME` defaults to `/usr/local/cuda-12.8`. Override if your CUDA is elsewhere:
 
@@ -160,27 +174,10 @@ git submodule add https://github.com/facebookresearch/sam3.git sam3_ws/sam3
 git submodule add https://github.com/IDEA-Research/Grounded-SAM-2.git gs2_ws/source
 git commit -m "chore: register upstream repos as git submodules"
 
-# 4. Rebuild GS2 CUDA extensions — TWO separate steps required
-export CUDA_HOME=/usr/local/cuda-12.8
-export PATH="$CUDA_HOME/bin:$PATH"
-cd gs2_ws
-
-# 4a. SAM2 CUDA extension (sam2/_C.so)
-uv pip install --no-build-isolation -e source/
-
-# 4b. GroundingDINO CUDA extension (groundingdino/_C.cpython-*.so)
-#     Must be built separately — source/setup.py does NOT cover grounding_dino/
-uv pip install --no-build-isolation -e source/grounding_dino/
-
-# (also reinstall torch+cuda if .venv was reset)
-uv pip install torch==2.11.0+cu128 torchvision==0.26.0+cu128 \
-  --extra-index-url https://download.pytorch.org/whl/cu128
-
-# Pin transformers to 4.x — transformers 5.x removed BertModel.get_head_mask
-uv pip install "transformers<5.0"
+# 4. Run setup — uv sync builds both CUDA extensions automatically
+CUDA_HOME=/usr/local/cuda-12.8 ./scripts/setup.sh
 
 # 5. Verify
-cd ..
 ./scripts/run_all.sh gs2_ws/source/notebooks/images/truck.jpg "car. tire."
 ```
 
@@ -194,9 +191,7 @@ git init
 git remote add origin https://github.com/IDEA-Research/Grounded-SAM-2.git
 git fetch origin main
 git merge origin/main   # or reset --hard if you want a clean sync
-# Rebuild extensions if any C++ files changed (two steps — see above)
+# Rebuild extensions if any C++ files changed
 cd ..
-export CUDA_HOME=/usr/local/cuda-12.8 && export PATH="$CUDA_HOME/bin:$PATH"
-uv pip install --no-build-isolation -e source/
-uv pip install --no-build-isolation -e source/grounding_dino/
+CUDA_HOME=/usr/local/cuda-12.8 uv sync
 ```
