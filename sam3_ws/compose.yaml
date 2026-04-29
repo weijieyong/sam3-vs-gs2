@@ -1,0 +1,35 @@
+name: sam3-project
+
+services:
+  app:
+    image: torch-5080:base
+    build:
+      context: .
+      dockerfile: Dockerfile.sam3
+    container_name: sam3-dev-container
+    working_dir: /workspace
+    
+    # Modern GPU configuration (Docker Compose v2.3+)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all    # Or use count: 1
+              capabilities: [gpu]
+
+    # Volume mount
+    volumes:
+      - ./to_mount:/workspace/to_mount
+      - ./huggingface_cache:/root/.cache/huggingface
+    
+    # Keep container running interactively
+    tty: true
+    stdin_open: true
+    
+    # Pass environment variable for Python safety
+    environment:
+      - PIP_BREAK_SYSTEM_PACKAGES=1
+      - PYTHONUNBUFFERED=1
+
+    # command: python3 /workspace/to_mount/run_sam3.py

@@ -1,0 +1,7 @@
+[submodule "sam3_ws/sam3"]
+	path = sam3_ws/sam3
+	url = https://github.com/facebookresearch/sam3.git
+
+[submodule "gs2_ws/source"]
+	path = gs2_ws/source
+	url = https://github.com/IDEA-Research/Grounded-SAM-2.git

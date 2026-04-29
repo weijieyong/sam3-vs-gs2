@@ -1,0 +1,68 @@
+[build-system]
+requires = [
+    "setuptools>=62.3.0,<75.9",
+    "torch>=2.3.1",
+    ]
+build-backend = "setuptools.build_meta"
+
+# ---------------------------------------------------------------------------
+# gs2_ws wrapper — mirrors the sam3_ws wrapper pattern.
+# Source code lives in source/ (git submodule of IDEA-Research/Grounded-SAM-2).
+# checkpoints/ and gdino_checkpoints/ stay at this level (not in source/).
+# ---------------------------------------------------------------------------
+[project]
+name = "SAM-2"
+version = "1.0"
+description = "Grounded SAM 2 workspace wrapper"
+readme = "source/README.md"
+license = { text = "Apache 2.0" }
+authors = [{ name = "Meta AI", email = "segment-anything@meta.com" }]
+requires-python = ">=3.10"
+
+# Runtime deps for the inference scripts (mirrors source/pyproject.toml core deps).
+# torch/torchvision are NOT listed here; install PyTorch via CUDA index manually.
+dependencies = [
+    "numpy>=1.24.4",
+    "tqdm>=4.66.1",
+    "hydra-core>=1.3.2",
+    "iopath>=0.1.10",
+    "pillow>=9.4.0",
+]
+
+[project.optional-dependencies]
+demos = [
+    "supervision>=0.22.0",
+    "transformers",
+    "addict",
+    "yapf",
+    "timm",
+    "opencv-python>=4.7.0",
+]
+dev = [
+    "black==24.2.0",
+    "usort==1.0.2",
+    "ufmt==2.0.0b2",
+    "fvcore>=0.1.5.post20221221",
+    "pandas>=2.2.2",
+    "scikit-image>=0.24.0",
+    "tensorboard>=2.17.0",
+    "pycocotools>=2.0.8",
+    "opencv-python>=4.7.0",
+    "submitit>=1.5.1",
+]
+
+# ---------------------------------------------------------------------------
+# uv configuration
+# ---------------------------------------------------------------------------
+[tool.uv]
+# package = false so uv does NOT try to build/install from this wrapper dir.
+# sam2 and grounding_dino are installed editable from source/ — do this ONCE:
+#   cd gs2_ws
+#   uv run -- pip install --no-build-isolation -e source
+#   uv run -- pip install --no-build-isolation -e source/grounding_dino
+package = false
+
+[tool.uv.sources]
+# grounding_dino is a local package with C extensions; install it editable.
+# Run `uv run -- pip install --no-build-isolation -e source/grounding_dino` separately
+# (see source/SETUP_NOTES.md) because it requires nvcc/CUDA_HOME at build time.

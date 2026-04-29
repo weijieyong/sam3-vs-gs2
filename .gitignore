@@ -1,0 +1,34 @@
+# Virtual environments
+.venv/
+
+# Model weights and large binary assets
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+checkpoints/
+gdino_checkpoints/
+huggingface_cache/
+
+# Run outputs (generated per-run; regenerate with run_all.sh)
+runs/
+
+# Docker container mount artifacts (root-owned, not project files)
+sam3_ws/to_mount/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

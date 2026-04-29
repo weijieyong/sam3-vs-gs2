@@ -1,0 +1,55 @@
+[project]
+name = "sam3-box"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "torch==2.10.0",
+    "torchvision>=0.25.0",
+    "sam3",
+    "setuptools>=70,<82",
+    "opencv-python-headless>=4.10",
+    "pillow>=10.0",
+    "huggingface-hub>=0.23",
+    "einops>=0.7",
+    "pycocotools>=2.0",
+    "psutil>=5.9",
+    "omegaconf>=2.3",
+    "hydra-core>=1.3",
+    "pandas>=2.0",
+    "scipy>=1.11",
+    "scikit-image>=0.22",
+    "scikit-learn>=1.3",
+    "submitit>=1.5",
+    "torchmetrics>=1.0",
+    "open-clip-torch>=2.24",
+    "openai>=1.0",
+]
+
+[project.optional-dependencies]
+notebooks = ["sam3[notebooks]"]
+dev = ["sam3[train,dev]"]
+fast-inference = [
+    "einops",
+    "ninja",
+    "flash-attn-3",
+    "cc-torch",
+]
+
+[tool.uv.sources]
+sam3 = { git = "https://github.com/facebookresearch/sam3.git" }
+torch = { index = "pytorch-cu128" }
+torchvision = { index = "pytorch-cu128" }
+torchaudio = { index = "pytorch-cu128" }
+flash-attn-3 = { index = "pytorch-cu128" }
+cc-torch = { git = "https://github.com/ronghanghu/cc_torch.git" }
+
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.extra-build-dependencies]
+cc-torch = ["torch"]
