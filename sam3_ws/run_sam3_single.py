@@ -25,22 +25,32 @@ def load_model():
     root = Path(__file__).resolve().parent
     hub = root / "huggingface_cache/hub/models--facebook--sam3/snapshots"
     if hub.is_dir():
-        pts = sorted(hub.glob("*/sam3.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+        pts = sorted(
+            hub.glob("*/sam3.pt"), key=lambda p: p.stat().st_mtime, reverse=True
+        )
         if pts:
-            return build_sam3_image_model(load_from_HF=False, checkpoint_path=str(pts[0]))
+            return build_sam3_image_model(
+                load_from_HF=False, checkpoint_path=str(pts[0])
+            )
     return build_sam3_image_model()
 
 
 try:
     model = load_model()
 except (HfHubHTTPError, LocalEntryNotFoundError) as e:
-    print("Weights: set SAM3_CHECKPOINT, HF_TOKEN, or cache under huggingface_cache/...", e, file=sys.stderr)
+    print(
+        "Weights: set SAM3_CHECKPOINT, HF_TOKEN, or cache under huggingface_cache/...",
+        e,
+        file=sys.stderr,
+    )
     sys.exit(1)
 
 processor = Sam3Processor(model)
 
 # --- image ---
-image_path = os.environ.get("SAM3_IMAGE", "/home/simt-wj/03_Exp/ws_detection/data/right_camera.ppm")
+image_path = os.environ.get(
+    "SAM3_IMAGE", "/home/simt-wj/03_Exp/ws_detection/data/right_camera.ppm"
+)
 if not os.path.isfile(image_path):
     print("Missing image:", image_path, file=sys.stderr)
     sys.exit(1)
@@ -62,15 +72,23 @@ for prompt in text_prompts:
     ps = state.copy()
     out = processor.set_text_prompt(prompt=prompt, state=ps)
     all_results.append(
-        {"prompt": prompt, "masks": out["masks"], "boxes": out["boxes"], "scores": out["scores"]}
+        {
+            "prompt": prompt,
+            "masks": out["masks"],
+            "boxes": out["boxes"],
+            "scores": out["scores"],
+        }
     )
     print(f"  prompt '{prompt}': {nobj(out['masks'])} mask(s)")
 print(f"text_prompt inference: {(time.perf_counter() - t1) * 1000:.1f} ms")
-print(f"inference total (set_image + text_prompts): {(time.perf_counter() - t0) * 1000:.1f} ms")
+print(
+    f"inference total (set_image + text_prompts): {(time.perf_counter() - t0) * 1000:.1f} ms"
+)
 
 if not all_results:
     masks = boxes = scores = None
 else:
+
     def cat(key):
         parts = [r[key] for r in all_results if r[key] is not None and len(r[key]) > 0]
         return torch.cat(parts, dim=0) if parts else None
@@ -104,10 +122,14 @@ def save_overlay(image, masks, boxes, scores, path, alpha=0.5, labels=None):
         c = (colors[i % len(colors)] * 255).astype(np.uint8)
         m = masks[i].squeeze()
         if m.shape != (h, w):
-            m = cv2.resize(m.astype(np.float32), (w, h), interpolation=cv2.INTER_NEAREST)
+            m = cv2.resize(
+                m.astype(np.float32), (w, h), interpolation=cv2.INTER_NEAREST
+            )
         mb = m > 0.5
         for ch in range(3):
-            overlay[..., ch][mb] = (alpha * c[ch] + (1 - alpha) * overlay[..., ch][mb]).astype(np.uint8)
+            overlay[..., ch][mb] = (
+                alpha * c[ch] + (1 - alpha) * overlay[..., ch][mb]
+            ).astype(np.uint8)
 
     for i in range(n):
         x1, y1, x2, y2 = (int(x) for x in boxes[i])
@@ -118,7 +140,16 @@ def save_overlay(image, masks, boxes, scores, path, alpha=0.5, labels=None):
             text = f"{labels[i]}: {sc:.2f}" if sc is not None else labels[i]
         else:
             text = f"{sc:.2f}" if sc is not None else str(i)
-        cv2.putText(overlay, text, (x1, max(y1 - 10, 0)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, c, 1, cv2.LINE_AA)
+        cv2.putText(
+            overlay,
+            text,
+            (x1, max(y1 - 10, 0)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            c,
+            1,
+            cv2.LINE_AA,
+        )
 
     Image.fromarray(overlay).save(path)
 

@@ -24,14 +24,20 @@ def load_model():
     if ck := os.environ.get("SAM3_CHECKPOINT"):
         if os.path.isfile(ck):
             return build_sam3_image_model(load_from_HF=False, checkpoint_path=ck)
-    root = Path(__file__).resolve().parents[2]  # overridden if copied; fallback below is cwd
+    root = (
+        Path(__file__).resolve().parents[2]
+    )  # overridden if copied; fallback below is cwd
     cwd = Path.cwd()
     for base in [cwd, root]:
         hub = base / "huggingface_cache/hub/models--facebook--sam3/snapshots"
         if hub.is_dir():
-            pts = sorted(hub.glob("*/sam3.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+            pts = sorted(
+                hub.glob("*/sam3.pt"), key=lambda p: p.stat().st_mtime, reverse=True
+            )
             if pts:
-                return build_sam3_image_model(load_from_HF=False, checkpoint_path=str(pts[0]))
+                return build_sam3_image_model(
+                    load_from_HF=False, checkpoint_path=str(pts[0])
+                )
     return build_sam3_image_model()
 
 
@@ -41,7 +47,9 @@ def save_overlay(image, masks, boxes, scores, labels, path, alpha=0.5):
     overlay = img.copy()
     masks = masks.cpu().float().numpy() if isinstance(masks, torch.Tensor) else masks
     boxes = boxes.cpu().float().numpy() if isinstance(boxes, torch.Tensor) else boxes
-    scores = scores.cpu().float().numpy() if isinstance(scores, torch.Tensor) else scores
+    scores = (
+        scores.cpu().float().numpy() if isinstance(scores, torch.Tensor) else scores
+    )
     if masks.ndim == 2:
         masks = masks[None, ...]
     if boxes.ndim == 1:
@@ -52,17 +60,30 @@ def save_overlay(image, masks, boxes, scores, labels, path, alpha=0.5):
         c = (colors[i] * 255).astype(np.uint8)
         m = masks[i].squeeze()
         if m.shape != (h, w):
-            m = cv2.resize(m.astype(np.float32), (w, h), interpolation=cv2.INTER_NEAREST)
+            m = cv2.resize(
+                m.astype(np.float32), (w, h), interpolation=cv2.INTER_NEAREST
+            )
         mb = m > 0.5
         for ch in range(3):
-            overlay[..., ch][mb] = (alpha * c[ch] + (1 - alpha) * overlay[..., ch][mb]).astype(np.uint8)
+            overlay[..., ch][mb] = (
+                alpha * c[ch] + (1 - alpha) * overlay[..., ch][mb]
+            ).astype(np.uint8)
     for i in range(len(boxes)):
         x1, y1, x2, y2 = (int(x) for x in boxes[i])
         c = tuple(int(x * 255) for x in colors[i % len(colors)])
         cv2.rectangle(overlay, (x1, y1), (x2, y2), c, 2)
         label = labels[i] if i < len(labels) else "sam3"
         score = float(scores[i]) if scores is not None and i < len(scores) else 0.0
-        cv2.putText(overlay, f"{label}: {score:.2f}", (x1, max(y1 - 10, 0)), cv2.FONT_HERSHEY_SIMPLEX, 0.55, c, 2, cv2.LINE_AA)
+        cv2.putText(
+            overlay,
+            f"{label}: {score:.2f}",
+            (x1, max(y1 - 10, 0)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.55,
+            c,
+            2,
+            cv2.LINE_AA,
+        )
     Image.fromarray(overlay).save(path)
 
 
@@ -78,7 +99,9 @@ def write_mask_png(image, masks, path):
     for i, m in enumerate(arr, start=1):
         m = m.squeeze()
         if m.shape != (h, w):
-            m = cv2.resize(m.astype(np.float32), (w, h), interpolation=cv2.INTER_NEAREST)
+            m = cv2.resize(
+                m.astype(np.float32), (w, h), interpolation=cv2.INTER_NEAREST
+            )
         combined[m > 0.5] = min(i, 255)
     Image.fromarray(combined).save(path)
 
@@ -86,7 +109,11 @@ def write_mask_png(image, masks, path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--image", required=True)
-    ap.add_argument("--prompt", required=True, help="Use semicolon or comma to separate multiple prompts")
+    ap.add_argument(
+        "--prompt",
+        required=True,
+        help="Use semicolon or comma to separate multiple prompts",
+    )
     ap.add_argument("--output-dir", required=True)
     args = ap.parse_args()
 
@@ -98,7 +125,9 @@ def main():
     # SAM3 expects one text concept per call, so split common prompt separators here.
     raw_prompt = args.prompt.replace(";", ",")
     if "," in raw_prompt:
-        prompts = [p.strip().strip(".") for p in raw_prompt.split(",") if p.strip().strip(".")]
+        prompts = [
+            p.strip().strip(".") for p in raw_prompt.split(",") if p.strip().strip(".")
+        ]
     else:
         prompts = [p.strip() for p in raw_prompt.split(".") if p.strip()]
 
@@ -111,12 +140,21 @@ def main():
     processor = Sam3Processor(model)
     image = Image.open(image_path).convert("RGB")
     t0 = time.perf_counter()
-    with torch.amp.autocast("cuda", dtype=torch.bfloat16, enabled=torch.cuda.is_available()):
+    with torch.amp.autocast(
+        "cuda", dtype=torch.bfloat16, enabled=torch.cuda.is_available()
+    ):
         state = processor.set_image(image)
         all_results = []
         for prompt in prompts:
             out = processor.set_text_prompt(prompt=prompt, state=state.copy())
-            all_results.append({"prompt": prompt, "masks": out["masks"], "boxes": out["boxes"], "scores": out["scores"]})
+            all_results.append(
+                {
+                    "prompt": prompt,
+                    "masks": out["masks"],
+                    "boxes": out["boxes"],
+                    "scores": out["scores"],
+                }
+            )
     runtime = time.perf_counter() - t0
 
     def cat(key):
@@ -138,7 +176,14 @@ def main():
         write_mask_png(image, masks, mask_path)
         b = boxes.cpu().float().numpy().tolist()
         s = scores.cpu().float().numpy().tolist()
-        detections = [{"label": labels[i] if i < len(labels) else "", "score": float(s[i]), "bbox": [float(x) for x in b[i]]} for i in range(len(b))]
+        detections = [
+            {
+                "label": labels[i] if i < len(labels) else "",
+                "score": float(s[i]),
+                "bbox": [float(x) for x in b[i]],
+            }
+            for i in range(len(b))
+        ]
     else:
         image.save(annotated)
         write_mask_png(image, None, mask_path)

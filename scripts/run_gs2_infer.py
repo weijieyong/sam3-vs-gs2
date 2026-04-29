@@ -45,8 +45,13 @@ def main():
     ap.add_argument("--text-threshold", type=float, default=0.25)
     ap.add_argument("--sam2-checkpoint", default="./checkpoints/sam2.1_hiera_large.pt")
     ap.add_argument("--sam2-model-config", default="configs/sam2.1/sam2.1_hiera_l.yaml")
-    ap.add_argument("--gdino-config", default="source/grounding_dino/groundingdino/config/GroundingDINO_SwinT_OGC.py")
-    ap.add_argument("--gdino-checkpoint", default="gdino_checkpoints/groundingdino_swint_ogc.pth")
+    ap.add_argument(
+        "--gdino-config",
+        default="source/grounding_dino/groundingdino/config/GroundingDINO_SwinT_OGC.py",
+    )
+    ap.add_argument(
+        "--gdino-checkpoint", default="gdino_checkpoints/groundingdino_swint_ogc.pth"
+    )
     args = ap.parse_args()
 
     image_path = Path(args.image).resolve()
@@ -65,7 +70,9 @@ def main():
     t0 = time.perf_counter()
     sam2_model = build_sam2(args.sam2_model_config, args.sam2_checkpoint, device=device)
     sam2_predictor = SAM2ImagePredictor(sam2_model)
-    grounding_model = load_model(args.gdino_config, args.gdino_checkpoint, device=device)
+    grounding_model = load_model(
+        args.gdino_config, args.gdino_checkpoint, device=device
+    )
 
     image_source, image = load_image(str(image_path))
     sam2_predictor.set_image(image_source)
@@ -84,16 +91,31 @@ def main():
     scores = []
     if len(boxes) > 0:
         boxes = boxes * torch.Tensor([w, h, w, h])
-        input_boxes = box_convert(boxes=boxes, in_fmt="cxcywh", out_fmt="xyxy").cpu().numpy()
-        with torch.amp.autocast("cuda", dtype=torch.bfloat16, enabled=torch.cuda.is_available()):
-            masks, scores, _ = sam2_predictor.predict(point_coords=None, point_labels=None, box=input_boxes, multimask_output=False)
+        input_boxes = (
+            box_convert(boxes=boxes, in_fmt="cxcywh", out_fmt="xyxy").cpu().numpy()
+        )
+        with torch.amp.autocast(
+            "cuda", dtype=torch.bfloat16, enabled=torch.cuda.is_available()
+        ):
+            masks, scores, _ = sam2_predictor.predict(
+                point_coords=None,
+                point_labels=None,
+                box=input_boxes,
+                multimask_output=False,
+            )
         if masks.ndim == 4:
             masks = masks.squeeze(1)
     runtime = time.perf_counter() - t0
 
-    confidences_list = confidences.cpu().numpy().tolist() if hasattr(confidences, "cpu") else list(confidences)
+    confidences_list = (
+        confidences.cpu().numpy().tolist()
+        if hasattr(confidences, "cpu")
+        else list(confidences)
+    )
     class_ids = np.array(list(range(len(class_names))))
-    labels = [f"{name} {score:.2f}" for name, score in zip(class_names, confidences_list)]
+    labels = [
+        f"{name} {score:.2f}" for name, score in zip(class_names, confidences_list)
+    ]
 
     annotated = out_dir / f"{stem}_gs2_annotated.jpg"
     mask_path = out_dir / f"{stem}_gs2_mask.png"
@@ -101,10 +123,18 @@ def main():
 
     img = cv2.imread(str(image_path))
     if len(input_boxes) > 0:
-        detections_sv = sv.Detections(xyxy=input_boxes, mask=masks.astype(bool), class_id=class_ids)
-        annotated_frame = sv.BoxAnnotator().annotate(scene=img.copy(), detections=detections_sv)
-        annotated_frame = sv.LabelAnnotator().annotate(scene=annotated_frame, detections=detections_sv, labels=labels)
-        annotated_frame = sv.MaskAnnotator().annotate(scene=annotated_frame, detections=detections_sv)
+        detections_sv = sv.Detections(
+            xyxy=input_boxes, mask=masks.astype(bool), class_id=class_ids
+        )
+        annotated_frame = sv.BoxAnnotator().annotate(
+            scene=img.copy(), detections=detections_sv
+        )
+        annotated_frame = sv.LabelAnnotator().annotate(
+            scene=annotated_frame, detections=detections_sv, labels=labels
+        )
+        annotated_frame = sv.MaskAnnotator().annotate(
+            scene=annotated_frame, detections=detections_sv
+        )
         cv2.imwrite(str(annotated), annotated_frame)
     else:
         cv2.imwrite(str(annotated), img)
@@ -112,12 +142,16 @@ def main():
 
     detections = []
     for i, name in enumerate(class_names):
-        detections.append({
-            "label": name,
-            "score": float(confidences_list[i]),
-            "bbox": [float(x) for x in input_boxes[i].tolist()],
-            "segmentation": single_mask_to_rle(masks[i].astype(np.uint8)) if len(masks) > i else None,
-        })
+        detections.append(
+            {
+                "label": name,
+                "score": float(confidences_list[i]),
+                "bbox": [float(x) for x in input_boxes[i].tolist()],
+                "segmentation": single_mask_to_rle(masks[i].astype(np.uint8))
+                if len(masks) > i
+                else None,
+            }
+        )
     payload = {
         "model": "grounded_sam2",
         "image": str(image_path),

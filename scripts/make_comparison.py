@@ -74,29 +74,43 @@ def main():
             continue
         sam3 = load_json(sam3_json)
         gs2 = load_json(gs2_json)
-        rows.append({
-            "image": Path(sam3["image"]).name,
-            "prompt": sam3["prompt"],
-            "sam3_detections": len(sam3.get("detections", [])),
-            "gs2_detections": len(gs2.get("detections", [])),
-            "sam3_runtime_sec": f"{sam3.get('runtime_sec', 0):.3f}",
-            "gs2_runtime_sec": f"{gs2.get('runtime_sec', 0):.3f}",
-        })
+        rows.append(
+            {
+                "image": Path(sam3["image"]).name,
+                "prompt": sam3["prompt"],
+                "sam3_detections": len(sam3.get("detections", [])),
+                "gs2_detections": len(gs2.get("detections", [])),
+                "sam3_runtime_sec": f"{sam3.get('runtime_sec', 0):.3f}",
+                "gs2_runtime_sec": f"{gs2.get('runtime_sec', 0):.3f}",
+            }
+        )
         make_side_by_side(
             [sam3["annotated_path"], gs2["annotated_path"]],
-            [f"SAM3 — {rows[-1]['sam3_detections']} detections", f"Grounded SAM2 — {rows[-1]['gs2_detections']} detections"],
+            [
+                f"SAM3 — {rows[-1]['sam3_detections']} detections",
+                f"Grounded SAM2 — {rows[-1]['gs2_detections']} detections",
+            ],
             comp_dir / f"{stem}_side_by_side.jpg",
         )
 
     with open(comp_dir / "summary.csv", "w", newline="") as f:
-        fieldnames = ["image", "prompt", "sam3_detections", "gs2_detections", "sam3_runtime_sec", "gs2_runtime_sec"]
+        fieldnames = [
+            "image",
+            "prompt",
+            "sam3_detections",
+            "gs2_detections",
+            "sam3_runtime_sec",
+            "gs2_runtime_sec",
+        ]
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
 
     notes = comp_dir / "notes.md"
     if not notes.exists():
-        notes.write_text("# Comparison Notes\n\n- Fill qualitative notes here: mask quality, object separation, failure modes.\n")
+        notes.write_text(
+            "# Comparison Notes\n\n- Fill qualitative notes here: mask quality, object separation, failure modes.\n"
+        )
     print(f"Wrote {comp_dir / 'summary.csv'}")
 
 

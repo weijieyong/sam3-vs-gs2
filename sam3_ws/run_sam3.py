@@ -12,8 +12,14 @@ from PIL import Image
 from sam3.model_builder import build_sam3_image_model
 from sam3.model.sam3_image_processor import Sam3Processor
 
-DATA_DIR = Path(os.environ.get("SAM3_DATA_DIR", "/home/simt-wj/03_Exp/ws_detection/data"))
-OUT_DIR = Path(os.environ.get("SAM3_OUTPUT_DIR", "/home/simt-wj/03_Exp/ws_detection/data/annotated"))
+DATA_DIR = Path(
+    os.environ.get("SAM3_DATA_DIR", "/home/simt-wj/03_Exp/ws_detection/data")
+)
+OUT_DIR = Path(
+    os.environ.get(
+        "SAM3_OUTPUT_DIR", "/home/simt-wj/03_Exp/ws_detection/data/annotated"
+    )
+)
 
 text_prompts = ["ports"]
 
@@ -29,9 +35,13 @@ def load_model():
     root = Path(__file__).resolve().parent
     hub = root / "huggingface_cache/hub/models--facebook--sam3/snapshots"
     if hub.is_dir():
-        pts = sorted(hub.glob("*/sam3.pt"), key=lambda p: p.stat().st_mtime, reverse=True)
+        pts = sorted(
+            hub.glob("*/sam3.pt"), key=lambda p: p.stat().st_mtime, reverse=True
+        )
         if pts:
-            return build_sam3_image_model(load_from_HF=False, checkpoint_path=str(pts[0]))
+            return build_sam3_image_model(
+                load_from_HF=False, checkpoint_path=str(pts[0])
+            )
     return build_sam3_image_model()
 
 
@@ -41,7 +51,9 @@ def save_overlay(image, masks, boxes, scores, path, colors, alpha=0.5, labels=No
     overlay = img.copy()
     masks = masks.cpu().float().numpy() if isinstance(masks, torch.Tensor) else masks
     boxes = boxes.cpu().float().numpy() if isinstance(boxes, torch.Tensor) else boxes
-    scores = scores.cpu().float().numpy() if isinstance(scores, torch.Tensor) else scores
+    scores = (
+        scores.cpu().float().numpy() if isinstance(scores, torch.Tensor) else scores
+    )
     if masks.ndim == 2:
         masks = masks[None, ...]
     if boxes.ndim == 1:
@@ -52,10 +64,14 @@ def save_overlay(image, masks, boxes, scores, path, colors, alpha=0.5, labels=No
         c = (colors[i % len(colors)] * 255).astype(np.uint8)
         m = masks[i].squeeze()
         if m.shape != (h, w):
-            m = cv2.resize(m.astype(np.float32), (w, h), interpolation=cv2.INTER_NEAREST)
+            m = cv2.resize(
+                m.astype(np.float32), (w, h), interpolation=cv2.INTER_NEAREST
+            )
         mb = m > 0.5
         for ch in range(3):
-            overlay[..., ch][mb] = (alpha * c[ch] + (1 - alpha) * overlay[..., ch][mb]).astype(np.uint8)
+            overlay[..., ch][mb] = (
+                alpha * c[ch] + (1 - alpha) * overlay[..., ch][mb]
+            ).astype(np.uint8)
 
     for i in range(n):
         x1, y1, x2, y2 = (int(x) for x in boxes[i])
@@ -66,7 +82,16 @@ def save_overlay(image, masks, boxes, scores, path, colors, alpha=0.5, labels=No
             text = f"{labels[i]}: {sc:.2f}" if sc is not None else labels[i]
         else:
             text = f"{sc:.2f}" if sc is not None else str(i)
-        cv2.putText(overlay, text, (x1, max(y1 - 10, 0)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, c, 1, cv2.LINE_AA)
+        cv2.putText(
+            overlay,
+            text,
+            (x1, max(y1 - 10, 0)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            c,
+            1,
+            cv2.LINE_AA,
+        )
 
     Image.fromarray(overlay).save(path)
 
@@ -83,18 +108,27 @@ def run_one(processor, image_path: Path, out_path: Path, colors):
         ps = state.copy()
         out = processor.set_text_prompt(prompt=prompt, state=ps)
         all_results.append(
-            {"prompt": prompt, "masks": out["masks"], "boxes": out["boxes"], "scores": out["scores"]}
+            {
+                "prompt": prompt,
+                "masks": out["masks"],
+                "boxes": out["boxes"],
+                "scores": out["scores"],
+            }
         )
         print(f"  prompt '{prompt}': {nobj(out['masks'])} mask(s)")
     print(f"text_prompt inference: {(time.perf_counter() - t1) * 1000:.1f} ms")
-    print(f"inference total (set_image + text_prompts): {(time.perf_counter() - t0) * 1000:.1f} ms")
+    print(
+        f"inference total (set_image + text_prompts): {(time.perf_counter() - t0) * 1000:.1f} ms"
+    )
 
     if not all_results:
         masks = boxes = scores = None
     else:
 
         def cat(key):
-            parts = [r[key] for r in all_results if r[key] is not None and len(r[key]) > 0]
+            parts = [
+                r[key] for r in all_results if r[key] is not None and len(r[key]) > 0
+            ]
             return torch.cat(parts, dim=0) if parts else None
 
         masks, boxes, scores = cat("masks"), cat("boxes"), cat("scores")
@@ -120,7 +154,11 @@ def main():
         model = load_model()
 
     except (HfHubHTTPError, LocalEntryNotFoundError) as e:
-        print("Weights: set SAM3_CHECKPOINT, HF_TOKEN, or cache under huggingface_cache/...", e, file=sys.stderr)
+        print(
+            "Weights: set SAM3_CHECKPOINT, HF_TOKEN, or cache under huggingface_cache/...",
+            e,
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     processor = Sam3Processor(model)
@@ -134,7 +172,10 @@ def main():
         paths = sorted(DATA_DIR.glob("*.ppm"))
 
     if not paths:
-        print(f"No .ppm files in {DATA_DIR} (set SAM3_IMAGE for a single file)", file=sys.stderr)
+        print(
+            f"No .ppm files in {DATA_DIR} (set SAM3_IMAGE for a single file)",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
