@@ -24,8 +24,8 @@ run_step() {
   echo "[$name] done. Log: $RUN_DIR/logs/${name}.log"
 }
 
-run_step sam3 "$ROOT/scripts/run_sam3.sh" "$IMAGE" "$PROMPT" "$RUN_DIR/sam3"
 run_step grounded_sam2 "$ROOT/scripts/run_gs2.sh" "$IMAGE" "$PROMPT" "$RUN_DIR/grounded_sam2"
+run_step sam3 "$ROOT/scripts/run_sam3.sh" "$IMAGE" "$PROMPT" "$RUN_DIR/sam3"
 uv run --project "$ROOT" "$ROOT/scripts/make_comparison.py" --run-dir "$RUN_DIR"
 cat "$RUN_DIR/comparison/summary.csv"
 echo "Run complete: $RUN_DIR"

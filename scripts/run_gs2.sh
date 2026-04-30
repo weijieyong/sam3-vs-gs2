@@ -12,4 +12,7 @@ GS2_WS="${GS2_WS:-$(cd "$SCRIPT_DIR/.." && pwd)/gs2_ws}"
 cd "$GS2_WS"
 export CUDA_HOME="${CUDA_HOME:-/usr/local/cuda-12.8}"
 export PATH="$CUDA_HOME/bin:$PATH"
-uv run python "$SCRIPT_DIR/run_gs2_infer.py" --image "$IMAGE" --prompt "$PROMPT" --output-dir "$OUTDIR"
+EXTRA_ARGS=()
+[ -n "${GS2_BOX_THRESH:-}" ]  && EXTRA_ARGS+=(--box-threshold  "$GS2_BOX_THRESH")
+[ -n "${GS2_TEXT_THRESH:-}" ] && EXTRA_ARGS+=(--text-threshold "$GS2_TEXT_THRESH")
+uv run python "$SCRIPT_DIR/run_gs2_infer.py" --image "$IMAGE" --prompt "$PROMPT" --output-dir "$OUTDIR" "${EXTRA_ARGS[@]}"

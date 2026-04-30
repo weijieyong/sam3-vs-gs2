@@ -115,6 +115,12 @@ def main():
         help="Use semicolon or comma to separate multiple prompts",
     )
     ap.add_argument("--output-dir", required=True)
+    ap.add_argument(
+        "--confidence-threshold",
+        type=float,
+        default=0.5,
+        help="Minimum score × presence score to keep a detection (default: 0.5)",
+    )
     args = ap.parse_args()
 
     image_path = Path(args.image).resolve()
@@ -137,7 +143,7 @@ def main():
         print("SAM3 weights unavailable", e, file=sys.stderr)
         return 2
 
-    processor = Sam3Processor(model)
+    processor = Sam3Processor(model, confidence_threshold=args.confidence_threshold)
     image = Image.open(image_path).convert("RGB")
     t0 = time.perf_counter()
     with torch.amp.autocast(

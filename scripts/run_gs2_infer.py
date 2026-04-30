@@ -67,7 +67,6 @@ def main():
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
 
-    t0 = time.perf_counter()
     sam2_model = build_sam2(args.sam2_model_config, args.sam2_checkpoint, device=device)
     sam2_predictor = SAM2ImagePredictor(sam2_model)
     grounding_model = load_model(
@@ -75,6 +74,8 @@ def main():
     )
 
     image_source, image = load_image(str(image_path))
+
+    t0 = time.perf_counter()
     sam2_predictor.set_image(image_source)
     boxes, confidences, class_names = predict(
         model=grounding_model,

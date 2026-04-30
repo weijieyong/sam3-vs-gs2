@@ -84,11 +84,12 @@ def main():
                 "gs2_runtime_sec": f"{gs2.get('runtime_sec', 0):.3f}",
             }
         )
+        prompt_str = sam3.get("prompt", "")
         make_side_by_side(
             [sam3["annotated_path"], gs2["annotated_path"]],
             [
-                f"SAM3 — {rows[-1]['sam3_detections']} detections",
-                f"Grounded SAM2 — {rows[-1]['gs2_detections']} detections",
+                f'SAM3 — "{prompt_str}" — {rows[-1]["sam3_detections"]} detections',
+                f'Grounded SAM2 — "{prompt_str}" — {rows[-1]["gs2_detections"]} detections',
             ],
             comp_dir / f"{stem}_side_by_side.jpg",
         )
