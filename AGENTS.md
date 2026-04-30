@@ -90,7 +90,6 @@ runs/<run_name>/
 
 ## Constraints
 
-- **NEVER** run `git submodule update --init` — `sam3_ws/sam3/` and `gs2_ws/source/` are regular tracked files, not live submodules.
-- **NEVER** edit `gs2_ws/source/sam2/_C.so` or `gs2_ws/source/grounding_dino/groundingdino/_C.cpython-312-x86_64-linux-gnu.so` — compiled CUDA extensions committed in-tree.
+- **NEVER** edit `gs2_ws/source/sam2/_C.so` or `gs2_ws/source/grounding_dino/groundingdino/_C.cpython-312-x86_64-linux-gnu.so` — compiled CUDA extensions, do not modify by hand.
 - **NEVER** commit `huggingface_cache/`, `checkpoints/`, `gdino_checkpoints/`, or `.venv/` — all gitignored.
 - **DO NOT** edit files under `runs/` — always regenerate via `run_all.sh`.
