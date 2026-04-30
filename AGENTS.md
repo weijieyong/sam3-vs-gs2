@@ -35,7 +35,7 @@ sam3_vs_gs2/
 ./scripts/run_gs2.sh  IMAGE PROMPT OUTDIR
 
 # Rebuild comparison only (no inference)
-uv run python scripts/make_comparison.py --run-dir runs/<run_name>
+uv run scripts/make_comparison.py --run-dir runs/<run_name>
 ```
 
 - `RUN_NAME` defaults to `YYYY-MM-DD_HHMMSS_<stem>` when omitted.
