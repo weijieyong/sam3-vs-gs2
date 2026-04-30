@@ -6,6 +6,7 @@ Two isolated model workspaces (SAM3 + Grounded SAM 2) compared side-by-side. No 
 
 ```
 sam3_vs_gs2/
+├── pyproject.toml        # root workspace (comparison scripts); dep: Pillow
 ├── scripts/              # run_all.sh, run_sam3.sh, run_gs2.sh, run_*_infer.py, make_comparison.py
 ├── data/images/          # shared test inputs
 ├── docs/                 # static assets (README images)
@@ -34,7 +35,7 @@ sam3_vs_gs2/
 ./scripts/run_gs2.sh  IMAGE PROMPT OUTDIR
 
 # Rebuild comparison only (no inference)
-python3 scripts/make_comparison.py --run-dir runs/<run_name>
+uv run python scripts/make_comparison.py --run-dir runs/<run_name>
 ```
 
 - `RUN_NAME` defaults to `YYYY-MM-DD_HHMMSS_<stem>` when omitted.
